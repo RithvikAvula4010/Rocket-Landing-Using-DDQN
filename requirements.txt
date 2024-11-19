@@ -1,0 +1,8 @@
+gym==0.26.2
+pygame==2.3.0
+numpy==1.23.5
+torch==1.13.1
+torchvision==0.14.1
+matplotlib==3.6.2
+tqdm==4.64.1
+tensorboard==2.10.1
