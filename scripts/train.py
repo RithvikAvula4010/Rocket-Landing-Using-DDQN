@@ -23,7 +23,7 @@ def train_agent(n_episodes=2000, load_latest_model=False):
     scores = []
     eps_history = []
     start = time.time()
-    top_episodes = []  # Each element: (score, seed, actions)
+    top_episodes = []
 
     for i in range(n_episodes):
         seed = random.randint(0, int(1e6))
@@ -38,7 +38,6 @@ def train_agent(n_episodes=2000, load_latest_model=False):
             next_state, reward, done, info = env.step(action)
             agent.save(state, action, reward, next_state, done)
 
-            # Store action for this episode
             episode_actions.append(action)
 
             state = next_state
@@ -47,7 +46,6 @@ def train_agent(n_episodes=2000, load_latest_model=False):
             steps += 1
             score += reward
 
-        # After episode ends, update top episodes
         if len(top_episodes) < 3:
             top_episodes.append((score, seed, episode_actions.copy()))
             top_episodes.sort(reverse=True, key=lambda x: x[0])  # Sort by score descending
@@ -73,7 +71,6 @@ def train_agent(n_episodes=2000, load_latest_model=False):
             with open(f"ddqn_torch_eps_history_{int(time.time())}.json", "w") as fp:
                 json.dump(eps_history, fp)
 
-    # After training, render and save the top 3 episodes
     if top_episodes:
         print("\nRendering and saving the best 3 episodes:")
         for idx, (score, seed, actions) in enumerate(top_episodes):
@@ -118,10 +115,10 @@ def render_episode(env, actions, seed, episode_num):
 
         # Capture the current frame from the Pygame display
         frame = pygame.surfarray.array3d(env.screen)
-        frame = np.transpose(frame, (1, 0, 2))  # Transpose axes to match ImageSequenceClip expectations
+        frame = np.transpose(frame, (1, 0, 2))
         frames.append(frame)
 
-        time.sleep(0.033)  # Pause for ~30 FPS
+        time.sleep(0.033)  # Pause for 30 FPS
         step += 1
 
     env.close()
@@ -133,5 +130,4 @@ def render_episode(env, actions, seed, episode_num):
     print(f"Saved video: {video_filename}")
 
 
-agent = train_agent(n_episodes=500, load_latest_model=False)
-
+agent = train_agent(n_episodes=1000, load_latest_model=True)

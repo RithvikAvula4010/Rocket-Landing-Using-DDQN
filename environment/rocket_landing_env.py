@@ -4,7 +4,7 @@ import numpy as np
 import time
 import random
 import pygame
-import pygame.freetype  # Import the freetype module
+import pygame.freetype
 
 
 class RocketLandingEnv(gym.Env):
@@ -28,18 +28,18 @@ class RocketLandingEnv(gym.Env):
         self.GREEN = (0, 255, 0)
 
         # Define the action and observation space
-        self.action_space = spaces.Discrete(4)  # Actions: 0=do nothing, 1=thrust, 2=rotate left, 3=rotate right
+        self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32)
         self.clock = pygame.time.Clock()
-        # Pygame setup
+
         pygame.init()
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Rocket Landing with DDQN")
 
-        # Initialize Pygame font
+
         if self.render_mode == 'human':
             pygame.init()
-            pygame.font.init()  # Initialize the font module
+            pygame.font.init()
             self.font = pygame.font.SysFont('Arial', 20)  # Choose a font and size
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
             pygame.display.set_caption("Rocket Landing with DQN")
@@ -47,25 +47,18 @@ class RocketLandingEnv(gym.Env):
         else:
             self.screen = None
             self.clock = None
-            self.font = None  # Font not needed if not rendering
+            self.font = None
 
-        # Create a transparent surface for the rocket
+
         self.rocket_surface = pygame.Surface((self.rocket_width, self.rocket_height), pygame.SRCALPHA)
         self.draw_rocket_shape()
 
         self.reset()
 
-        # Create a transparent surface for the rocket
-        self.rocket_surface = pygame.Surface((self.rocket_width, self.rocket_height), pygame.SRCALPHA)
-        self.draw_rocket_shape()
-
-        self.reset()
 
     def draw_rocket_shape(self):
-        # Clear the surface
         self.rocket_surface.fill((0, 0, 0, 0))  # Transparent background
 
-        # Define the points of the rocket polygon
         rocket_points = [
             (self.rocket_width / 2, 0),  # Tip of the rocket
             (self.rocket_width, self.rocket_height * 0.6),
@@ -74,7 +67,6 @@ class RocketLandingEnv(gym.Env):
             (0, self.rocket_height * 0.6)
         ]
 
-        # Draw the rocket body
         pygame.draw.polygon(self.rocket_surface, self.BLACK, rocket_points)
 
     def reset(self, seed=None):
@@ -86,7 +78,7 @@ class RocketLandingEnv(gym.Env):
         self.rocket_angle = 0
         self.landed = False
         self.crashed = False
-        self.thrusting = False  # Initialize self.thrusting
+        self.thrusting = False
 
         return self._get_observation()
 
@@ -102,7 +94,7 @@ class RocketLandingEnv(gym.Env):
     def step(self, action):
         self.thrusting = False
 
-        if action == 1:  # Apply thrust
+        if action == 1:  # thrust
             self.rocket_velocity[1] -= self.thrust * np.cos(np.radians(self.rocket_angle))
             self.rocket_velocity[0] += self.thrust * np.sin(np.radians(self.rocket_angle))
             self.thrusting = True
@@ -110,17 +102,14 @@ class RocketLandingEnv(gym.Env):
             self.rocket_angle += 2
         elif action == 3:  # Rotate clockwise
             self.rocket_angle -= 2
-        # action == 0 (do nothing), so no changes to thrust or angle
 
         # Apply gravity and damping
         self.rocket_velocity[1] += self.gravity
         self.rocket_velocity[0] *= self.damping
         self.rocket_pos += self.rocket_velocity
 
-        # Initialize reward
         reward = 0
 
-        # Reward shaping (same as before)
         angle_penalty = -abs(self.rocket_angle) * 0.1
         reward += angle_penalty
 
@@ -130,33 +119,31 @@ class RocketLandingEnv(gym.Env):
         vertical_velocity_penalty = -max(0, self.rocket_velocity[1]) * 0.1
         reward += vertical_velocity_penalty
 
-        # Check for boundary collisions
         if self.rocket_pos[0] < 0 or self.rocket_pos[0] > self.screen_width - self.rocket_width:
-            reward -= 1000  # Penalty for leaving horizontal bounds (sides)
+            reward -= 1000
             self.crashed = True
             done = True
             return self._get_observation(), reward, done, {}
 
         if self.rocket_pos[1] <= 0:
             self.rocket_pos[1] = 0
-            reward -= 1000  # Penalty for hitting the top
+            reward -= 1000
             self.crashed = True
             done = True
             return self._get_observation(), reward, done, {}
 
-        # Landing or crash on the ground
         done = False
         if self.rocket_pos[1] >= self.screen_height - self.rocket_height:
             self.rocket_pos[1] = self.screen_height - self.rocket_height
             if abs(self.rocket_velocity[1]) <= 5.0 and abs(self.rocket_angle) <= 7:
                 self.landed = True
-                reward += 1000  # Reward for safe landing
+                reward += 1000
             else:
                 self.crashed = True
                 crash_velocity = abs(self.rocket_velocity[1])
-                penalty_scale = 2  # Adjust this value as needed
+                penalty_scale = 2
                 penalty = crash_velocity * penalty_scale
-                reward -= penalty  # Penalty proportional to crash velocity
+                reward -= penalty
             done = True
 
         return self._get_observation(), reward, done, {}
@@ -178,19 +165,15 @@ class RocketLandingEnv(gym.Env):
             self.clock = pygame.time.Clock()
             self.font = pygame.font.SysFont('Arial', 20)
 
-        # Draw sky gradient
         self.draw_sky_gradient()
 
-        # Draw ground
         ground_height = 30
         pygame.draw.rect(self.screen, (139, 69, 19),
                          (0, self.screen_height - ground_height, self.screen_width, ground_height))  # Brown ground
 
-        # Draw borders
         border_thickness = 5
         pygame.draw.rect(self.screen, self.BLACK, (0, 0, self.screen_width, self.screen_height), border_thickness)
 
-        # Draw rocket and other elements
         if self.crashed:
             self.draw_crash(self.rocket_pos)
         elif self.landed:
@@ -201,38 +184,32 @@ class RocketLandingEnv(gym.Env):
             if self.thrusting:
                 self.draw_ignition(self.rocket_pos)
 
-        # Display velocity and angle
         self.display_info()
 
         pygame.display.flip()
         self.clock.tick(30)  # 30 frames per second
 
     def display_info(self):
-        # Prepare the text to display
         velocity_text = f"Velocity: ({self.rocket_velocity[0]:.2f}, {self.rocket_velocity[1]:.2f})"
         angle_text = f"Angle: {self.rocket_angle:.2f}°"
 
-        # Render the text
         velocity_surface = self.font.render(velocity_text, True, self.BLACK)
         angle_surface = self.font.render(angle_text, True, self.BLACK)
 
-        # Get the text surfaces' sizes
         velocity_rect = velocity_surface.get_rect()
         angle_rect = angle_surface.get_rect()
 
-        # Position the texts
         padding = 10
         total_height = velocity_rect.height + angle_rect.height + padding
         x_position = self.screen_width - velocity_rect.width - padding
         y_position = self.screen_height - total_height - padding
 
-        # Blit the text surfaces onto the screen
         self.screen.blit(velocity_surface, (x_position, y_position))
         self.screen.blit(angle_surface, (x_position, y_position + velocity_rect.height + padding // 2))
 
     def draw_sky_gradient(self):
-        top_color = (135, 206, 250)  # Light blue
-        bottom_color = (255, 255, 255)  # White
+        top_color = (135, 206, 250)
+        bottom_color = (255, 255, 255)
         for y in range(self.screen_height):
             color_ratio = y / self.screen_height
             r = int(top_color[0] * (1 - color_ratio) + bottom_color[0] * color_ratio)

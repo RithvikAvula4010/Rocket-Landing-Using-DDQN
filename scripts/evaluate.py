@@ -2,17 +2,15 @@ from environment.rocket_landing_env import RocketLandingEnv
 from agent.dqn_agent import DQNAgent
 import torch
 
-# evaluate.py
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define parameters for the agent (ensure epsilon is set to zero)
 params = {
     'batch_size': 64,
     'gamma': 0.99,
-    'epsilon_start': 0.0,      # No exploration during evaluation
+    'epsilon_start': 0.0,      
     'epsilon_min': 0.0,
-    'epsilon_decay': 1,        # No decay needed
+    'epsilon_decay': 1,  
     'learning_rate': 1e-3,
     'target_update': 10,
     'replay_buffer_capacity': 10000,
@@ -21,7 +19,7 @@ params = {
 }
 
 def main():
-    env = RocketLandingEnv(render_mode='human')  # Enable rendering during evaluation
+    env = RocketLandingEnv(render_mode='human')
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.n
 
@@ -41,19 +39,16 @@ def main():
         done = False
 
         while not done:
-            # Select action (no exploration)
             with torch.no_grad():
                 state_tensor = torch.from_numpy(state).float().unsqueeze(0).to(device)
                 q_values = agent.policy_net(state_tensor)
                 action = q_values.max(1)[1].item()
 
-            # Take action in the environment
             next_state, reward, done, _ = env.step(action)
             state = next_state
 
             total_reward += reward
 
-            # Render the environment
             env.render()
 
             if done:
